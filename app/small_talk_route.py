@@ -113,6 +113,6 @@ def small_talk_chain(question):
     return small_talk_response
 
 
-if __name__ == "__main__":
-    question = "Do you think it will rain tonight?"
-    print(small_talk_chain(question))
+# if __name__ == "__main__":
+#     question = "Do you think it will rain tonight?"
+#     print(small_talk_chain(question))
