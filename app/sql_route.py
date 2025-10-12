@@ -267,7 +267,7 @@ def sql_chain(question):
     return natural_language_answer
 
 
-if __name__ == "__main__":
-    question = "Show me any 3 Nike women's shoes with rating greater 4 and discount of at least 10% and price under 6000"
+# if __name__ == "__main__":
+#     question = "Show me any 3 Nike women's shoes with rating greater 4 and discount of at least 10% and price under 6000"
 
-    print(sql_chain(question))
+#     print(sql_chain(question))
