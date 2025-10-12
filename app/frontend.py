@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 from helper_functions.router import router
 from faq_route import ingest_faq_data, faq_chain
@@ -6,7 +7,9 @@ from small_talk_route import small_talk_chain
 import re
 from datetime import datetime
 
-faqs_path = "C:/Users/Inspire/Code/Gen AI/Myntra_chat_assistant/app/resources/Myntra_FAQ.csv"
+# Resolve faqs_path relative to this file
+base_dir = os.path.dirname(os.path.abspath(__file__))
+faqs_path = os.path.join(base_dir, "resources", "Myntra_FAQ.csv")
 
 ingest_faq_data(faqs_path)
 
