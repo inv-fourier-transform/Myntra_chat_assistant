@@ -128,4 +128,11 @@ def faq_chain(query):
 
     return chat_completion.choices[0].message.content
 
+# if __name__ == "__main__":
+#     # When running as a script, always ingest data once
+#     ingest_faq_data(faqs_path)
+#     query = "I want to pay via EMI using my credit card. Which credit cards are accepted for EMI payments?"
+
+#     answer = faq_chain(query)
+#     print(answer)
 
