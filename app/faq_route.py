@@ -35,7 +35,7 @@ collection_name_faq = 'faqs'
 
 
 def ingest_faq_data(path):
-    # Delete existing collection if exists to ensure fresh ingestion on deploy
+    # Delete existing collection if exists to ensure fresh ingestion
     if collection_name_faq in [c.name for c in chromadb_client.list_collections()]:
         chromadb_client.delete_collection(collection_name_faq)
         print(f"Deleted existing collection: {collection_name_faq}")
@@ -79,16 +79,20 @@ def get_relevant_qa(query):
 
 
 def faq_chain(query):
+    # Check Streamlit session_state flag to avoid re-ingesting each query
+    if 'ingested_faq' not in st.session_state or not st.session_state['ingested_faq']:
+        ingest_faq_data(faqs_path)
+        st.session_state['ingested_faq'] = True
+
     result = get_relevant_qa(query)
 
-    # Defensive check for empty or unexpected structure
+    # Defensive extraction of context string
     context = ""
     if 'metadatas' in result and result['metadatas']:
         first_metadata = result['metadatas'][0]
         if isinstance(first_metadata, dict):
             context = first_metadata.get('answer', '')
         elif isinstance(first_metadata, list) and len(first_metadata) > 0:
-            # fallback in case it's a list of dicts
             context = first_metadata[0].get('answer', '')
 
     prompt = f"""
@@ -125,14 +129,3 @@ def faq_chain(query):
     return chat_completion.choices[0].message.content
 
 
-if __name__ == "__main__":
-    # Debug prints to verify paths and keys
-    # import streamlit as st
-    # st.write(f"FAQ CSV Path: {faqs_path}")
-    # st.write(f"GROQ_API_KEY is set: {GROQ_API_KEY is not None}")
-
-    ingest_faq_data(faqs_path)
-    query = "I want to pay via EMI using my credit card. Which credit cards are accepted for EMI payments?"
-
-    answer = faq_chain(query)
-    print(answer)
