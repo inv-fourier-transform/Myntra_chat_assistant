@@ -14,7 +14,7 @@ faqs_path = os.path.join(base_dir, "resources", "Myntra_FAQ.csv")
 img_path = os.path.join(base_dir, "assets", "thumbnail_image.jpeg")
 
 # Display the image in the Streamlit app
-st.image(img_path, caption="Myntra Shoes Chat Assistant", use_column_width=True)
+st.image(img_path)
 
 ingest_faq_data(faqs_path)
 
