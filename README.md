@@ -15,7 +15,7 @@ An intelligent chatbot assistant for Myntra's e-commerce platform that helps use
 - **Embedding Model**: `all-MiniLM-L12-v2` (Sentence Transformers)
 - **LLM**: `openai/gpt-oss-120b` using Groq Cloud API
 - **Vector Database**: ChromaDB for semantic similarity search
-- **Structured Data**: SQLite3 for product catalog
+- **Structured Data**: SQLite3 for product catalogue
 - **Web Framework**: Streamlit for the frontend interface
 - **Natural Language Processing**: Semantic Router for intent classification
 
@@ -73,12 +73,12 @@ Myntra_chat_assistant/
    streamlit run frontend.py
    ```
 
-## 🧠 Data & Catalog
+## 🧠 Data & Catalogue
 
 - **Men's Shoes**: 1000+ products
 - **Women's Shoes**: 1000+ products
 - **Brands**: Nike, Adidas, Puma, Reebok, Skechers, Under Armour, and more
-- **Product Details**: Prices, sizes, colors, ratings, discounts, and availability
+- **Product Details**: Prices, ratings, discounts, and hyperlinks
 
 ## 🤖 How It Works
 
@@ -137,6 +137,10 @@ The current implementation focuses on shoes but can be extended to:
 - Additional categories (topwear, bottomwear, accessories)
 - More brands and products
 - Enhanced filtering options
+
+## 🚀 Version 2.0
+
+Once launched, it will be able to handle more complex SQL queries, including sub-queries, CTEs, and other advanced query structures to make data retrieval even more powerful.
 
 ## 💻 Local Development with Ollama
 
