@@ -81,11 +81,15 @@ def get_relevant_qa(query):
 def faq_chain(query):
     result = get_relevant_qa(query)
 
-    # Correct extraction of answer string from metadata dictionary
-    if result['metadatas'] and len(result['metadatas']) > 0 and len(result['metadatas'][0]) > 0:
-        context = result['metadatas'][0].get('answer', '')
-    else:
-        context = ''
+    # Defensive check for empty or unexpected structure
+    context = ""
+    if 'metadatas' in result and result['metadatas']:
+        first_metadata = result['metadatas'][0]
+        if isinstance(first_metadata, dict):
+            context = first_metadata.get('answer', '')
+        elif isinstance(first_metadata, list) and len(first_metadata) > 0:
+            # fallback in case it's a list of dicts
+            context = first_metadata[0].get('answer', '')
 
     prompt = f"""
     You are a question-answering assistant. Answer the QUESTION using ONLY the information provided in the CONTEXT below.
@@ -123,7 +127,6 @@ def faq_chain(query):
 
 if __name__ == "__main__":
     # Debug prints to verify paths and keys
-   
     # import streamlit as st
     # st.write(f"FAQ CSV Path: {faqs_path}")
     # st.write(f"GROQ_API_KEY is set: {GROQ_API_KEY is not None}")
