@@ -1,15 +1,23 @@
 from groq import Groq
 import os
 from dotenv import load_dotenv
+import streamlit as st
 
 load_dotenv()
 
-DB_PATH = r"C:\Users\Inspire\Code\Gen AI\Myntra_chat_assistant\app\resources\myntra_db.sqlite"
+# Resolve DB_PATH relative to the current file
+base_dir = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(base_dir, "resources", "myntra_db.sqlite")
 
-# Initialize Groq client with API key from environment variables
-if not os.getenv('GROQ_API_KEY'):
-    raise ValueError("GROQ_API_KEY environment variable is not set. Please add it to your .env file.")
-small_talk_client = Groq(api_key=os.getenv('GROQ_API_KEY'))
+# Load environment variable
+GROQ_API_KEY = os.getenv('GROQ_API_KEY') or st.secrets.get("GROQ_API_KEY")
+if not GROQ_API_KEY:
+    raise ValueError("GROQ_API_KEY not set in environment variables or Streamlit secrets.")
+small_talk_client = Groq(api_key=GROQ_API_KEY)
+
+GROQ_MODEL = os.getenv("GROQ_MODEL") or st.secrets.get("GROQ_MODEL")
+if not GROQ_MODEL:
+    raise ValueError("GROQ_MODEL not set in environment variables or Streamlit secrets.")
 
 small_talk_prompt = """
 You are a friendly and professional AI assistant specialized in **small talk**. Your role is to respond naturally and politely to casual conversation or general chit-chat.
@@ -81,9 +89,7 @@ Return **only the short response sentence**, with no explanations, notes, or ext
 """
 
 
-
 def generate_smalltalk_response(question):
-
     chat_completion = small_talk_client.chat.completions.create(
         messages=[
             {
@@ -95,19 +101,18 @@ def generate_smalltalk_response(question):
                 "content": question,
             }
         ],
-        model=os.environ["GROQ_MODEL"],
+        model=GROQ_MODEL,
         temperature=0.3,
-        #max_tokens=1024
-
+        # max_tokens=1024
     )
-
     return chat_completion.choices[0].message.content
+
 
 def small_talk_chain(question):
     small_talk_response = generate_smalltalk_response(question)
-
     return small_talk_response
 
-if __name__ == "__main__":
-    question = "Do you think it will rain tonight?"
-    print(small_talk_chain(question))
+
+# if __name__ == "__main__":
+#     question = "Do you think it will rain tonight?"
+#     print(small_talk_chain(question))

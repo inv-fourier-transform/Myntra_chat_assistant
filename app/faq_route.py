@@ -1,58 +1,67 @@
 import logging
-
-# Disable all ChromaDB logs
-logging.getLogger("chromadb").setLevel(logging.CRITICAL)
-
+import os
 import pandas as pd
 import chromadb
 from sentence_transformers import SentenceTransformer
 from helper_functions.embedding_function import CPUEmbeddingFunction  # Import the CPU embedding class
 from groq import Groq
 from dotenv import load_dotenv
-import os
+import streamlit as st
 
 load_dotenv()
 
-# Initialize Groq client with API key from environment variables
-if not os.getenv('GROQ_API_KEY'):
-    raise ValueError("GROQ_API_KEY environment variable is not set. Please add it to your .env file.")
-groq_client = Groq(api_key=os.getenv('GROQ_API_KEY'))
+# Disable all ChromaDB logs
+logging.getLogger("chromadb").setLevel(logging.CRITICAL)
+
+# Resolve faqs_path relative to this file
+base_dir = os.path.dirname(os.path.abspath(__file__))
+faqs_path = os.path.join(base_dir, "resources", "Myntra_FAQ.csv")
+
+# Load environment variable securely
+GROQ_API_KEY = os.getenv('GROQ_API_KEY') or st.secrets.get("GROQ_API_KEY")
+if not GROQ_API_KEY:
+    raise ValueError("GROQ_API_KEY not set in environment variables or Streamlit secrets.")
+groq_client = Groq(api_key=GROQ_API_KEY)
+
+GROQ_MODEL = os.getenv("GROQ_MODEL") or st.secrets.get("GROQ_MODEL")
+if not GROQ_MODEL:
+    raise ValueError("GROQ_MODEL not set in environment variables or Streamlit secrets.")
 
 # Load model on CPU
 model = SentenceTransformer('all-MiniLM-L12-v2', device='cpu')
-
-faqs_path = "C:/Users/Inspire/Code/Gen AI/Myntra_chat_assistant/app/resources/Myntra_FAQ.csv"
 
 chromadb_client = chromadb.Client()
 collection_name_faq = 'faqs'
 
 
 def ingest_faq_data(path):
-    if collection_name_faq not in [c.name for c in chromadb_client.list_collections()]:
-        print("Ingesting FAQ data into ChromaDB...")
+    # Delete existing collection if exists to ensure fresh ingestion on deploy
+    if collection_name_faq in [c.name for c in chromadb_client.list_collections()]:
+        chromadb_client.delete_collection(collection_name_faq)
+        print(f"Deleted existing collection: {collection_name_faq}")
 
-        # Use CPU embedding function
-        embedding_function = CPUEmbeddingFunction(model)
+    print("Ingesting FAQ data into ChromaDB...")
 
-        collection = chromadb_client.get_or_create_collection(
-            name=collection_name_faq,
-            embedding_function=embedding_function
-        )
+    # Use CPU embedding function
+    embedding_function = CPUEmbeddingFunction(model)
 
-        df = pd.read_csv(path)
-        docs = df['QUESTION'].tolist()
-        metadata = [{'answer': ans} for ans in df['ANSWER'].tolist()]
-        ids = [f"id_{i}" for i in range(len(docs))]
+    collection = chromadb_client.get_or_create_collection(
+        name=collection_name_faq,
+        embedding_function=embedding_function
+    )
 
-        collection.add(
-            documents=docs,
-            metadatas=metadata,
-            ids=ids
-        )
+    df = pd.read_csv(path)
+    docs = df['QUESTION'].tolist()
+    metadata = [{'answer': ans} for ans in df['ANSWER'].tolist()]
+    ids = [f"id_{i}" for i in range(len(docs))]
 
-        print(f"FAQ data successfully ingested into ChromaDB collection: {collection_name_faq}")
-    else:
-        print(f"Collection {collection_name_faq} already exists")
+    collection.add(
+        documents=docs,
+        metadatas=metadata,
+        ids=ids
+    )
+
+    print(f"FAQ data successfully ingested into ChromaDB collection: {collection_name_faq}")
 
 
 def get_relevant_qa(query):
@@ -72,7 +81,15 @@ def get_relevant_qa(query):
 def faq_chain(query):
     result = get_relevant_qa(query)
 
-    context = ''.join([r.get('answer') for r in result['metadatas'][0]])
+    # Defensive check for empty or unexpected structure
+    context = ""
+    if 'metadatas' in result and result['metadatas']:
+        first_metadata = result['metadatas'][0]
+        if isinstance(first_metadata, dict):
+            context = first_metadata.get('answer', '')
+        elif isinstance(first_metadata, list) and len(first_metadata) > 0:
+            # fallback in case it's a list of dicts
+            context = first_metadata[0].get('answer', '')
 
     prompt = f"""
     You are a question-answering assistant. Answer the QUESTION using ONLY the information provided in the CONTEXT below.
@@ -102,16 +119,20 @@ def faq_chain(query):
                 "content": prompt,
             }
         ],
-        model=os.environ["GROQ_MODEL"],
+        model=GROQ_MODEL,
     )
 
     return chat_completion.choices[0].message.content
 
 
 if __name__ == "__main__":
+    # Debug prints to verify paths and keys
+    # import streamlit as st
+    # st.write(f"FAQ CSV Path: {faqs_path}")
+    # st.write(f"GROQ_API_KEY is set: {GROQ_API_KEY is not None}")
+
     ingest_faq_data(faqs_path)
     query = "I want to pay via EMI using my credit card. Which credit cards are accepted for EMI payments?"
 
     answer = faq_chain(query)
     print(answer)
-

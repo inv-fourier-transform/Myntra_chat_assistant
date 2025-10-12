@@ -1,9 +1,13 @@
+import os
 import pandas as pd
 import sqlite3
 
-# Database and CSV file paths
-db_path = 'myntra_db.sqlite'
-csv_path = "C:/Users/Inspire/Code/Gen AI/Myntra_chat_assistant/app/resources/myntra_sports_shoes_20251011.csv"
+# Get base directory relative to this script
+base_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Database and CSV file paths — constructed as absolute paths relative to this file
+db_path = os.path.join(base_dir, "myntra_db.sqlite")
+csv_path = os.path.join(base_dir, "resources", "myntra_sports_shoes_20251011.csv")
 
 # Connect to SQLite database
 conn = sqlite3.connect(db_path)

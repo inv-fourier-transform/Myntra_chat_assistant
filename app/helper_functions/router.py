@@ -117,10 +117,10 @@ encoder = HuggingFaceEncoder(model="sentence-transformers/all-mpnet-base-v2")
 
 router = SemanticRouter(routes=[faq, sql, small_talk], encoder=encoder, auto_sync="local")
 
-if __name__ == "__main__":
-    print(router("Do you accept ICICI credit card EMI as a payment option?").name)
-    print(router("Show me a pair of Nike running shoes").name)
-    print(router("What's the weather like today?").name)
-    print(router("Did you sleep well yesterday?").name)
+# if __name__ == "__main__":
+#     print(router("Do you accept ICICI credit card EMI as a payment option?").name)
+#     print(router("Show me a pair of Nike running shoes").name)
+#     print(router("What's the weather like today?").name)
+#     print(router("Did you sleep well yesterday?").name)
 
 
