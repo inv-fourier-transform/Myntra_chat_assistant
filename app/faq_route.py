@@ -17,7 +17,7 @@ logging.getLogger("chromadb").setLevel(logging.CRITICAL)
 base_dir = os.path.dirname(os.path.abspath(__file__))
 faqs_path = os.path.join(base_dir, "resources", "Myntra_FAQ.csv")
 
-# Load environment variable securely
+# Load API key
 GROQ_API_KEY = os.getenv('GROQ_API_KEY') or st.secrets.get("GROQ_API_KEY")
 if not GROQ_API_KEY:
     raise ValueError("GROQ_API_KEY not set in environment variables or Streamlit secrets.")
@@ -35,31 +35,33 @@ collection_name_faq = 'faqs'
 
 
 def ingest_faq_data(path):
-    if collection_name_faq not in [c.name for c in chromadb_client.list_collections()]:
-        print("Ingesting FAQ data into ChromaDB...")
+    # Delete existing collection if exists to ensure fresh ingestion on deploy
+    if collection_name_faq in [c.name for c in chromadb_client.list_collections()]:
+        chromadb_client.delete_collection(collection_name_faq)
+        print(f"Deleted existing collection: {collection_name_faq}")
 
-        # Use CPU embedding function
-        embedding_function = CPUEmbeddingFunction(model)
+    print("Ingesting FAQ data into ChromaDB...")
 
-        collection = chromadb_client.get_or_create_collection(
-            name=collection_name_faq,
-            embedding_function=embedding_function
-        )
+    # Use custom CPU embedding function
+    embedding_function = CPUEmbeddingFunction(model)
 
-        df = pd.read_csv(path)
-        docs = df['QUESTION'].tolist()
-        metadata = [{'answer': ans} for ans in df['ANSWER'].tolist()]
-        ids = [f"id_{i}" for i in range(len(docs))]
+    collection = chromadb_client.get_or_create_collection(
+        name=collection_name_faq,
+        embedding_function=embedding_function
+    )
 
-        collection.add(
-            documents=docs,
-            metadatas=metadata,
-            ids=ids
-        )
+    df = pd.read_csv(path)
+    docs = df['QUESTION'].tolist()
+    metadata = [{'answer': ans} for ans in df['ANSWER'].tolist()]
+    ids = [f"id_{i}" for i in range(len(docs))]
 
-        print(f"FAQ data successfully ingested into ChromaDB collection: {collection_name_faq}")
-    else:
-        print(f"Collection {collection_name_faq} already exists")
+    collection.add(
+        documents=docs,
+        metadatas=metadata,
+        ids=ids
+    )
+
+    print(f"FAQ data successfully ingested into ChromaDB collection: {collection_name_faq}")
 
 
 def get_relevant_qa(query):
@@ -79,7 +81,11 @@ def get_relevant_qa(query):
 def faq_chain(query):
     result = get_relevant_qa(query)
 
-    context = ''.join([r.get('answer') for r in result['metadatas'][0]])
+    # Correct extraction of answer string from metadata dictionary
+    if result['metadatas'] and len(result['metadatas']) > 0 and len(result['metadatas'][0]) > 0:
+        context = result['metadatas'][0].get('answer', '')
+    else:
+        context = ''
 
     prompt = f"""
     You are a question-answering assistant. Answer the QUESTION using ONLY the information provided in the CONTEXT below.
@@ -117,8 +123,10 @@ def faq_chain(query):
 
 if __name__ == "__main__":
     # Debug prints to verify paths and keys
-    #st.write(f"FAQ CSV Path: {faqs_path}")
-    #st.write(f"GROQ_API_KEY is set: {GROQ_API_KEY is not None}")
+   
+    # import streamlit as st
+    # st.write(f"FAQ CSV Path: {faqs_path}")
+    # st.write(f"GROQ_API_KEY is set: {GROQ_API_KEY is not None}")
 
     ingest_faq_data(faqs_path)
     query = "I want to pay via EMI using my credit card. Which credit cards are accepted for EMI payments?"
