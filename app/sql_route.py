@@ -4,16 +4,23 @@ from groq import Groq
 import os
 import re
 from dotenv import load_dotenv
+import streamlit as st
 
 load_dotenv()
 
-DB_PATH = r"C:\Users\Inspire\Code\Gen AI\Myntra_chat_assistant\app\resources\myntra_db.sqlite"
+# Resolve DB_PATH relative to this file
+base_dir = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(base_dir, "resources", "myntra_db.sqlite")
 
-# Initialize Groq client with API key from environment variables
-if not os.getenv('GROQ_API_KEY'):
-    raise ValueError("GROQ_API_KEY environment variable is not set. Please add it to your .env file.")
-sql_client = Groq(api_key=os.getenv('GROQ_API_KEY'))
+# Load API key from .env file 
+GROQ_API_KEY = os.getenv('GROQ_API_KEY') or st.secrets.get("GROQ_API_KEY")
+if not GROQ_API_KEY:
+    raise ValueError("GROQ_API_KEY not set in environment variables or Streamlit secrets.")
+sql_client = Groq(api_key=GROQ_API_KEY)
 
+GROQ_MODEL = os.getenv("GROQ_MODEL") or st.secrets.get("GROQ_MODEL")
+if not GROQ_MODEL:
+    raise ValueError("GROQ_MODEL not set in environment variables or Streamlit secrets.")
 
 def run_query(query):
     """
@@ -42,7 +49,7 @@ def run_query(query):
     # Execute the query and return results
     try:
         with sqlite3.connect(DB_PATH) as conn:
-            # Execute query and load results into DataFrame
+            # Execute query and load results into dataframe
             df = pd.read_sql_query(query, conn)
             return df
     except sqlite3.Error as e:
@@ -170,7 +177,6 @@ Return ONLY the final answer as plain text or numbered list. No headings, explan
 
 
 def generate_sql_query(question):
-
     chat_completion = sql_client.chat.completions.create(
         messages=[
             {
@@ -182,13 +188,12 @@ def generate_sql_query(question):
                 "content": question,
             }
         ],
-        model=os.environ["GROQ_MODEL"],
+        model=GROQ_MODEL,
         temperature=0.2,
         #max_tokens=1024
-
     )
-
     return chat_completion.choices[0].message.content
+
 
 def data_comprehension(question, context):
     chat_completion = sql_client.chat.completions.create(
@@ -202,11 +207,10 @@ def data_comprehension(question, context):
                 "content": f"QUESTION: {question}. DATA: {context}",
             }
         ],
-        model=os.environ['GROQ_MODEL'],
+        model=GROQ_MODEL,
         temperature=0.2,
         # max_tokens=1024
     )
-
     return chat_completion.choices[0].message.content
 
 
@@ -265,6 +269,5 @@ def sql_chain(question):
 
 if __name__ == "__main__":
     question = "Show me any 3 Nike women's shoes with rating greater 4 and discount of at least 10% and price under 6000"
-
 
     print(sql_chain(question))
