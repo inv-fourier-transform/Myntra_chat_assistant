@@ -17,7 +17,7 @@ logging.getLogger("chromadb").setLevel(logging.CRITICAL)
 base_dir = os.path.dirname(os.path.abspath(__file__))
 faqs_path = os.path.join(base_dir, "resources", "Myntra_FAQ.csv")
 
-# Load API key
+# Load environment variable securely
 GROQ_API_KEY = os.getenv('GROQ_API_KEY') or st.secrets.get("GROQ_API_KEY")
 if not GROQ_API_KEY:
     raise ValueError("GROQ_API_KEY not set in environment variables or Streamlit secrets.")
@@ -42,7 +42,7 @@ def ingest_faq_data(path):
 
     print("Ingesting FAQ data into ChromaDB...")
 
-    # Use custom CPU embedding function
+    # Use CPU embedding function
     embedding_function = CPUEmbeddingFunction(model)
 
     collection = chromadb_client.get_or_create_collection(
@@ -81,11 +81,15 @@ def get_relevant_qa(query):
 def faq_chain(query):
     result = get_relevant_qa(query)
 
-    # Correct extraction of answer string from metadata dictionary
-    if result['metadatas'] and len(result['metadatas']) > 0 and len(result['metadatas'][0]) > 0:
-        context = result['metadatas'][0].get('answer', '')
-    else:
-        context = ''
+    # Defensive check for empty or unexpected structure
+    context = ""
+    if 'metadatas' in result and result['metadatas']:
+        first_metadata = result['metadatas'][0]
+        if isinstance(first_metadata, dict):
+            context = first_metadata.get('answer', '')
+        elif isinstance(first_metadata, list) and len(first_metadata) > 0:
+            # fallback in case it's a list of dicts
+            context = first_metadata[0].get('answer', '')
 
     prompt = f"""
     You are a question-answering assistant. Answer the QUESTION using ONLY the information provided in the CONTEXT below.
@@ -121,14 +125,14 @@ def faq_chain(query):
     return chat_completion.choices[0].message.content
 
 
-# if __name__ == "__main__":
-#     # Debug prints to verify paths and keys
-#     # import streamlit as st
-#     # st.write(f"FAQ CSV Path: {faqs_path}")
-#     # st.write(f"GROQ_API_KEY is set: {GROQ_API_KEY is not None}")
+if __name__ == "__main__":
+    # Debug prints to verify paths and keys
+    # import streamlit as st
+    # st.write(f"FAQ CSV Path: {faqs_path}")
+    # st.write(f"GROQ_API_KEY is set: {GROQ_API_KEY is not None}")
 
-#     ingest_faq_data(faqs_path)
-#     query = "I want to pay via EMI using my credit card. Which credit cards are accepted for EMI payments?"
+    ingest_faq_data(faqs_path)
+    query = "I want to pay via EMI using my credit card. Which credit cards are accepted for EMI payments?"
 
-#     answer = faq_chain(query)
-#     print(answer)
+    answer = faq_chain(query)
+    print(answer)
