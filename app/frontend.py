@@ -13,6 +13,8 @@ faqs_path = os.path.join(base_dir, "resources", "Myntra_FAQ.csv")
 
 img_path = os.path.join(base_dir, "assets", "thumbnail_image.jpeg")
 
+st.set_page_config(layout="wide")
+
 # Display the image in the Streamlit app
 st.image(img_path)
 
@@ -108,7 +110,7 @@ def ask(query):
         return f"Route {route} not implemented yet"
 
 
-st.set_page_config(page_title="Myntra Shoe Assistant", page_icon="👟", layout="wide")
+# st.set_page_config(page_title="Myntra Shoe Assistant", page_icon="👟", layout="wide")
 
 st.markdown("""
     <style>
