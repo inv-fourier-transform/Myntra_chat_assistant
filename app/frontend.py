@@ -13,15 +13,10 @@ faqs_path = os.path.join(base_dir, "resources", "Myntra_FAQ.csv")
 
 img_path = os.path.join(base_dir, "assets", "thumbnail_image.jpeg")
 
-st.set_page_config(layout="wide")
-
 # Display the image in the Streamlit app
 st.image(img_path)
 
-# Use session state to ingest FAQ data only once per session
-if 'faqs_ingested' not in st.session_state:
-    ingest_faq_data(faqs_path)
-    st.session_state['faqs_ingested'] = True
+ingest_faq_data(faqs_path)
 
 
 def format_sql_response(response):
@@ -110,7 +105,7 @@ def ask(query):
         return f"Route {route} not implemented yet"
 
 
-# st.set_page_config(page_title="Myntra Shoe Assistant", page_icon="👟", layout="wide")
+st.set_page_config(page_title="Myntra Shoe Assistant", page_icon="👟", layout="wide")
 
 st.markdown("""
     <style>
@@ -121,6 +116,17 @@ st.markdown("""
         background-color: #000000;
         max-width: 1200px;
         margin: 0 auto;
+    }
+    .title-container {
+        text-align: center;
+        padding: 2rem 0 1rem 0;
+        margin-bottom: 1rem;
+    }
+    .title-text {
+        font-size: 2.5rem;
+        font-weight: 400;
+        color: #ffffff;
+        margin: 0;
     }
     .stChatMessage {
         background: transparent !important;
@@ -171,6 +177,12 @@ st.markdown("""
         margin-top: 2rem;
     }
     </style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+    <div class="title-container">
+        <h1 class="title-text">👟 Myntra Shoe Assistant Chatbot</h1>
+    </div>
 """, unsafe_allow_html=True)
 
 if 'messages' not in st.session_state:
