@@ -1,27 +1,34 @@
 import logging
-
-# Disable all ChromaDB logs
-logging.getLogger("chromadb").setLevel(logging.CRITICAL)
-
+import os
 import pandas as pd
 import chromadb
 from sentence_transformers import SentenceTransformer
 from helper_functions.embedding_function import CPUEmbeddingFunction  # Import the CPU embedding class
 from groq import Groq
 from dotenv import load_dotenv
-import os
+import streamlit as st
 
 load_dotenv()
 
-# Initialize Groq client with API key from environment variables
-if not os.getenv('GROQ_API_KEY'):
-    raise ValueError("GROQ_API_KEY environment variable is not set. Please add it to your .env file.")
-groq_client = Groq(api_key=os.getenv('GROQ_API_KEY'))
+# Disable all ChromaDB logs
+logging.getLogger("chromadb").setLevel(logging.CRITICAL)
+
+# Resolve faqs_path relative to this file
+base_dir = os.path.dirname(os.path.abspath(__file__))
+faqs_path = os.path.join(base_dir, "resources", "Myntra_FAQ.csv")
+
+# Load environment variable securely
+GROQ_API_KEY = os.getenv('GROQ_API_KEY') or st.secrets.get("GROQ_API_KEY")
+if not GROQ_API_KEY:
+    raise ValueError("GROQ_API_KEY not set in environment variables or Streamlit secrets.")
+groq_client = Groq(api_key=GROQ_API_KEY)
+
+GROQ_MODEL = os.getenv("GROQ_MODEL") or st.secrets.get("GROQ_MODEL")
+if not GROQ_MODEL:
+    raise ValueError("GROQ_MODEL not set in environment variables or Streamlit secrets.")
 
 # Load model on CPU
 model = SentenceTransformer('all-MiniLM-L12-v2', device='cpu')
-
-faqs_path = "C:/Users/Inspire/Code/Gen AI/Myntra_chat_assistant/app/resources/Myntra_FAQ.csv"
 
 chromadb_client = chromadb.Client()
 collection_name_faq = 'faqs'
@@ -102,16 +109,19 @@ def faq_chain(query):
                 "content": prompt,
             }
         ],
-        model=os.environ["GROQ_MODEL"],
+        model=GROQ_MODEL,
     )
 
     return chat_completion.choices[0].message.content
 
 
 if __name__ == "__main__":
+    # Debug prints to verify paths and keys
+    #st.write(f"FAQ CSV Path: {faqs_path}")
+    #st.write(f"GROQ_API_KEY is set: {GROQ_API_KEY is not None}")
+
     ingest_faq_data(faqs_path)
     query = "I want to pay via EMI using my credit card. Which credit cards are accepted for EMI payments?"
 
     answer = faq_chain(query)
     print(answer)
-
